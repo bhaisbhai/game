@@ -41,15 +41,17 @@ export function usePlayerProfile() {
       s.gamesPlayed++;
       s.clueDistribution = dist;
 
-      if (dateISO) {
-        const today = dateISO ?? todayISO();
+      // Streak: only update once per calendar day to prevent resets on replays
+      if (dateISO && s.lastDailyPlayedDateISO !== dateISO) {
         if (s.lastDailyPlayedDateISO) {
-          const last = new Date(s.lastDailyPlayedDateISO);
-          const diff = Math.round((new Date(today).getTime() - last.getTime()) / 86400000);
-          s.dailyStreakCurrent = diff === 1 ? s.dailyStreakCurrent + 1 : 1;
-        } else { s.dailyStreakCurrent = 1; }
+          const diffMs = new Date(dateISO).getTime() - new Date(s.lastDailyPlayedDateISO).getTime();
+          const diffDays = Math.round(diffMs / 86400000);
+          s.dailyStreakCurrent = diffDays === 1 ? s.dailyStreakCurrent + 1 : 1;
+        } else {
+          s.dailyStreakCurrent = 1;
+        }
         s.dailyStreakBest = Math.max(s.dailyStreakBest, s.dailyStreakCurrent);
-        s.lastDailyPlayedDateISO = today;
+        s.lastDailyPlayedDateISO = dateISO;
       }
 
       const n = { ...prev, stats: s }; save(n); return n;

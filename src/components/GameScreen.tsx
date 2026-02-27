@@ -116,7 +116,7 @@ export function GameScreen({ quote, isDaily, profile, onHome, onShare, onPlayAga
 
         {/* Quote source hint */}
         <p className="quote-source-hint">
-          Famous quote · {run.quote.year}
+          {run.quote.film.includes('—') ? 'Famous lyric' : 'Famous quote'} · {run.quote.year}
         </p>
 
         {/* The quote with letter tiles */}

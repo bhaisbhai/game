@@ -647,16 +647,17 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 46px;
-  border-radius: 6px;
+  width: 42px;
+  height: 52px;
+  border-radius: 7px;
   border: 2px solid var(--border2);
   font-family: var(--font-title);
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: 0;
   transition: border-color 0.15s, background 0.15s;
   user-select: none;
+  position: relative;
 }
 
 .letter-tile.hidden {
@@ -664,10 +665,21 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   border-color: var(--border);
   color: transparent;
 }
+/* Underscore bar inside hidden tiles — classic hangman look */
+.letter-tile.hidden::after {
+  content: '';
+  position: absolute;
+  bottom: 8px;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: var(--border2);
+  border-radius: 1px;
+}
 
 .letter-tile.revealed {
-  background: rgba(255, 215, 0, 0.08);
-  border-color: var(--gold2);
+  background: rgba(255, 215, 0, 0.1);
+  border-color: var(--gold);
   color: var(--gold);
   animation: tile-reveal 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }

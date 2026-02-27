@@ -65,7 +65,7 @@ export function HomeScreen({ stats, alreadyPlayedToday, onPlayDaily, onPlayPract
         <button className="btn-text" onClick={onTutorial}>❓ How to play</button>
       </div>
 
-      <p className="home-tagline">40 quotes · New daily puzzle every midnight · No sign-up</p>
+      <p className="home-tagline">80 quotes &amp; lyrics · New daily puzzle every midnight · No sign-up</p>
     </div>
   );
 }
