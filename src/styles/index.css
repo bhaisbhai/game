@@ -540,3 +540,355 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ══════════════════════════════════════════════════
+   HANGMAN / QUOTE DISPLAY
+   ══════════════════════════════════════════════════ */
+
+/* ── Wrong tracker ── */
+.wrong-tracker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.tracker-label {
+  font-size: 0.7rem;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+.tracker-frames {
+  display: flex;
+  gap: 6px;
+}
+.tracker-frame {
+  width: 22px;
+  height: 30px;
+  border-radius: 3px;
+  border: 2px solid var(--border2);
+  background: var(--surface);
+  transition: border-color 0.2s, background 0.2s;
+  position: relative;
+}
+/* Film sprocket holes — decorative dots */
+.tracker-frame::before,
+.tracker-frame::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.tracker-frame::before { top: 3px; }
+.tracker-frame::after  { bottom: 3px; }
+
+.tracker-frame.used {
+  border-color: var(--red);
+  background: rgba(230, 57, 70, 0.22);
+}
+.tracker-frame.used::before,
+.tracker-frame.used::after {
+  border-color: rgba(230, 57, 70, 0.4);
+  background: rgba(230, 57, 70, 0.15);
+}
+.tracker-frame.shake { animation: shake 0.4s ease; }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60%  { transform: translateX(-5px); }
+  40%, 80%  { transform: translateX(5px); }
+}
+
+/* ── Quote source hint ── */
+.quote-source-hint {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+/* ── Quote display (letter tiles) ── */
+.quote-display {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1rem;
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quote-words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  justify-content: center;
+  align-items: flex-end;
+  line-height: 1;
+}
+
+.quote-word {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.letter-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 36px;
+  border-radius: 5px;
+  border: 2px solid var(--border2);
+  font-family: var(--font-title);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  transition: border-color 0.15s, background 0.15s;
+  user-select: none;
+}
+
+.letter-tile.hidden {
+  background: var(--bg3);
+  border-color: var(--border);
+  color: transparent;
+}
+
+.letter-tile.revealed {
+  background: rgba(255, 215, 0, 0.08);
+  border-color: var(--gold2);
+  color: var(--gold);
+  animation: tile-reveal 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes tile-reveal {
+  from { transform: scaleY(0.4); opacity: 0; }
+  to   { transform: scaleY(1);   opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .letter-tile.revealed { animation: none; } }
+
+.quote-punct {
+  font-size: 1.15rem;
+  color: var(--text2);
+  line-height: 1;
+  padding-bottom: 3px;
+  user-select: none;
+}
+
+/* ── Emoji hints ── */
+.hints-reveal-btn {
+  align-self: center;
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text2);
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+}
+.hints-reveal-btn:hover:not(:disabled) {
+  background: var(--bg3);
+  color: var(--text);
+}
+.hints-reveal-btn:disabled { opacity: 0.35; cursor: default; }
+
+.hints-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  animation: flash-in 0.35s ease;
+}
+.hints-label {
+  font-size: 0.68rem;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+.hints-emoji-row {
+  display: flex;
+  gap: 10px;
+}
+.hint-emoji {
+  font-size: 1.6rem;
+  filter: drop-shadow(0 0 6px rgba(255,215,0,0.25));
+}
+
+/* ── QWERTY Keyboard ── */
+.letter-keyboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 0 4px;
+  width: 100%;
+}
+
+.kb-row {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.kb-key {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 44px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s, border-color 0.1s, opacity 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.kb-key:hover:not(:disabled) {
+  background: var(--bg3);
+  border-color: var(--text2);
+}
+.kb-key:active:not(:disabled) {
+  transform: scale(0.92);
+}
+.kb-key.correct {
+  background: rgba(255, 215, 0, 0.15);
+  border-color: var(--gold2);
+  color: var(--gold);
+}
+.kb-key.wrong {
+  background: rgba(230, 57, 70, 0.1);
+  border-color: rgba(230, 57, 70, 0.3);
+  color: rgba(255, 255, 255, 0.25);
+  cursor: default;
+}
+.kb-key:disabled {
+  cursor: default;
+}
+
+/* ── Results: quote reveal & film reveal ── */
+.quote-reveal {
+  text-align: center;
+}
+.quote-reveal-label {
+  font-size: 0.78rem;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.4rem;
+}
+.quote-reveal-text {
+  font-size: 1.05rem;
+  color: var(--text);
+  line-height: 1.6;
+  font-style: italic;
+  border-left: 3px solid var(--gold);
+  padding-left: 0.75rem;
+  text-align: left;
+}
+
+.results-emojis { }
+.results-emoji-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 0.4rem;
+}
+.results-hint-emoji { font-size: 1.5rem; }
+
+/* ── Tutorial hangman visuals ── */
+.tut-quote-demo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.tut-quote-words {
+  display: flex;
+  gap: 4px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.tut-letter {
+  width: 26px;
+  height: 32px;
+  border-radius: 4px;
+  border: 2px solid var(--border2);
+  background: var(--bg3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-title);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.tut-letter.revealed { border-color: var(--gold2); color: var(--gold); background: rgba(255,215,0,0.08); }
+.tut-letter.hidden   { border-color: var(--border); }
+.tut-space { width: 8px; }
+
+.tut-kb-demo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.tut-kb-row {
+  display: flex;
+  gap: 5px;
+}
+.tut-key {
+  width: 36px;
+  height: 44px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tut-key.correct { background: rgba(255,215,0,0.15); border-color: var(--gold2); color: var(--gold); }
+.tut-key.wrong   { background: rgba(230,57,70,0.1); border-color: rgba(230,57,70,0.3); color: rgba(255,255,255,0.25); }
+
+.tut-lives-demo {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.tut-frame {
+  width: 18px;
+  height: 24px;
+  border-radius: 3px;
+  border: 2px solid var(--border2);
+  background: var(--surface);
+}
+.tut-frame.used { border-color: var(--red); background: rgba(230,57,70,0.2); }
+.tut-lives-label { font-size: 0.72rem; color: var(--text2); margin-left: 4px; }
+
+.tut-hint-demo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.tut-emoji-row { display: flex; gap: 8px; }
+.tut-hint-emoji { font-size: 1.5rem; }
+.tut-hint-caption { font-size: 0.78rem; color: var(--text2); font-style: italic; }

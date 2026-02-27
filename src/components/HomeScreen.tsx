@@ -24,21 +24,21 @@ export function HomeScreen({ stats, alreadyPlayedToday, onPlayDaily, onPlayPract
         </div>
         <h1 className="home-title">Reel Masala</h1>
         <p className="home-sub">
-          Guess the 90s–00s film from emoji clues
+          Guess the famous film quote
         </p>
         <p className="home-sub2">
-          Hollywood · Bollywood · UK TV · Animation
+          Hollywood · Bollywood · UK · TV · 90s–00s
         </p>
       </div>
 
       <div className="home-actions">
         <button className="btn-primary" onClick={onPlayDaily}>
-          {alreadyPlayedToday ? '📽️ View today\'s result' : `▶ Daily Film #${getDailyNumber()}`}
+          {alreadyPlayedToday ? '📽️ View today\'s result' : `▶ Daily Quote #${getDailyNumber()}`}
           <span className="btn-sub">{todayISO()}</span>
         </button>
         <button className="btn-secondary" onClick={onPlayPractice}>
           🎲 Practice mode
-          <span className="btn-sub">Random film · Unlimited</span>
+          <span className="btn-sub">Random quote · Unlimited</span>
         </button>
       </div>
 
@@ -65,7 +65,7 @@ export function HomeScreen({ stats, alreadyPlayedToday, onPlayDaily, onPlayPract
         <button className="btn-text" onClick={onTutorial}>❓ How to play</button>
       </div>
 
-      <p className="home-tagline">65 films · New daily puzzle every midnight · No sign-up</p>
+      <p className="home-tagline">40 quotes · New daily puzzle every midnight · No sign-up</p>
     </div>
   );
 }

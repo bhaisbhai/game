@@ -31,11 +31,13 @@ export function usePlayerProfile() {
     setProfile(prev => { const n = { ...prev, settings: { ...prev.settings, ...patch } }; save(n); return n; });
   }, []);
 
-  const recordResult = useCallback((cluesUsed: number, solved: boolean, dateISO?: string) => {
+  // wrongCount: number of wrong guesses (0 = perfect, 5 = barely survived)
+  const recordResult = useCallback((wrongCount: number, solved: boolean, dateISO?: string) => {
     setProfile(prev => {
       const s: PlayerStats = { ...prev.stats };
       const dist: [number,number,number,number,number,number] = [...s.clueDistribution] as [number,number,number,number,number,number];
-      if (solved) { dist[cluesUsed - 1]++; s.solvedTotal++; } else { dist[5]++; }
+      // dist[0]=0wrong, [1]=1wrong, [2]=2wrong, [3]=3wrong, [4]=4-5wrong, [5]=failed
+      if (solved) { dist[Math.min(wrongCount, 4)]++; s.solvedTotal++; } else { dist[5]++; }
       s.gamesPlayed++;
       s.clueDistribution = dist;
 

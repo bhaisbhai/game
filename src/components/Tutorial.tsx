@@ -4,53 +4,76 @@ interface TutorialProps { onDone: () => void; }
 
 const STEPS = [
   {
-    title: 'A film is hidden in emoji',
-    body: 'Each day a 90s–00s film or show is encoded as 5 emoji clues. Start with just 1 — can you crack it early?',
+    title: 'Guess the famous quote',
+    body: "A classic line from a 90s–00s film or show is hidden. Letters are blanked out — you reveal them one at a time by picking letters. Can you crack it before running out of guesses?",
     visual: (
-      <div className="tut-clues">
-        <div className="tut-tile revealed big">🌊<span className="clue-num">1</span></div>
-        <div className="tut-tile hidden">?<span className="clue-num">2</span></div>
-        <div className="tut-tile hidden">?<span className="clue-num">3</span></div>
-        <div className="tut-tile hidden">?<span className="clue-num">4</span></div>
-        <div className="tut-tile hidden">?<span className="clue-num">5</span></div>
-      </div>
-    ),
-  },
-  {
-    title: 'Type to search & guess',
-    body: 'Type any part of a film title — matching suggestions appear. Tap one to submit your guess.',
-    visual: (
-      <div className="tut-input-demo">
-        <div className="tut-input-box">tit<span className="tut-cursor">|</span></div>
-        <div className="tut-suggestion">Titanic</div>
-        <div className="tut-suggestion muted">Training Day</div>
-      </div>
-    ),
-  },
-  {
-    title: 'Wrong? Get feedback + next clue',
-    body: 'Each wrong guess reveals the next emoji AND tells you if your guess matched the correct era, origin, or genre.',
-    visual: (
-      <div className="tut-feedback-demo">
-        <div className="tut-wrong">❌ Poseidon Adventure</div>
-        <div className="tut-tags">
-          <span className="tag tag-yes">✓ Era</span>
-          <span className="tag tag-yes">✓ Origin</span>
-          <span className="tag tag-no">✗ Genre</span>
+      <div className="tut-quote-demo">
+        <div className="tut-quote-words">
+          <div className="tut-letter revealed">T</div>
+          <div className="tut-letter revealed">O</div>
+          <span className="tut-space" />
+          <div className="tut-letter hidden" />
+          <div className="tut-letter hidden" />
+          <div className="tut-letter hidden" />
+          <div className="tut-letter hidden" />
+          <div className="tut-letter hidden" />
+          <div className="tut-letter hidden" />
+          <div className="tut-letter hidden" />
+          <span className="tut-space" />
+          <div className="tut-letter hidden" />
+          <div className="tut-letter hidden" />
+          <div className="tut-letter hidden" />
         </div>
-        <div className="tut-new-clue">New clue: 🚢</div>
       </div>
     ),
   },
   {
-    title: 'Score big with fewer clues',
-    body: 'The earlier you crack it, the higher your score. Share your spoiler-free result and challenge friends!',
+    title: 'Pick letters — all matches reveal',
+    body: "Tap a letter or press a key. If it appears in the quote, every matching letter lights up at once. If it's not there, you lose one of your 6 lives.",
+    visual: (
+      <div className="tut-kb-demo">
+        <div className="tut-kb-row">
+          {['T', 'O', 'I', 'N', 'F'].map(l => (
+            <div key={l} className={`tut-key ${l === 'T' || l === 'O' ? 'correct' : l === 'F' ? 'wrong' : ''}`}>{l}</div>
+          ))}
+        </div>
+        <div className="tut-lives-demo">
+          <div className="tut-frame used" />
+          <div className="tut-frame" />
+          <div className="tut-frame" />
+          <div className="tut-frame" />
+          <div className="tut-frame" />
+          <div className="tut-frame" />
+          <span className="tut-lives-label">1 of 6 wrong</span>
+        </div>
+      </div>
+    ),
+  },
+  {
+    title: 'Need a hint? Reveal the emojis',
+    body: "Stuck on which film it's from? Hit 'Show film hints' to reveal 5 emoji clues about the source film. It's noted in your result but won't stop you winning!",
+    visual: (
+      <div className="tut-hint-demo">
+        <div className="tut-emoji-row">
+          <span className="tut-hint-emoji">💊</span>
+          <span className="tut-hint-emoji">🕶️</span>
+          <span className="tut-hint-emoji">🟢</span>
+          <span className="tut-hint-emoji">📱</span>
+          <span className="tut-hint-emoji">🤖</span>
+        </div>
+        <p className="tut-hint-caption">From a 1999 film…</p>
+      </div>
+    ),
+  },
+  {
+    title: 'Score big — fewer wrong = better',
+    body: "Solve the quote without mistakes for a perfect score. Share your spoiler-free result and challenge your friends!",
     visual: (
       <div className="tut-score-demo">
-        <div className="tut-score-row"><span>1 clue</span><span>🔥 LEGENDARY</span></div>
-        <div className="tut-score-row"><span>2 clues</span><span>⚡ BRILLIANT</span></div>
-        <div className="tut-score-row"><span>3 clues</span><span>⭐ GREAT</span></div>
-        <div className="tut-score-row muted"><span>5 clues</span><span>😅 SQUEAKY</span></div>
+        <div className="tut-score-row"><span>0 wrong</span><span>🔥 FLAWLESS</span></div>
+        <div className="tut-score-row"><span>1 wrong</span><span>⚡ BRILLIANT</span></div>
+        <div className="tut-score-row"><span>2 wrong</span><span>⭐ GREAT</span></div>
+        <div className="tut-score-row muted"><span>6 wrong</span><span>💀 Stumped</span></div>
       </div>
     ),
   },

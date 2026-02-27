@@ -1,16 +1,26 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { GameRun, WrongGuess } from '../types';
-import { FilmEntry } from '../data/films';
+import { GameRun } from '../types';
+import { QuoteEntry } from '../data/quotes';
 
-const MAX_WRONG = 5;
+export const MAX_WRONG = 6;
 
-function initRun(film: FilmEntry): GameRun {
+export function quoteLetterSet(quote: string): Set<string> {
+  return new Set(quote.toUpperCase().split('').filter(c => c >= 'A' && c <= 'Z'));
+}
+
+function isComplete(quote: string, guessedLetters: string[]): boolean {
+  const needed = quoteLetterSet(quote);
+  return [...needed].every(l => guessedLetters.includes(l));
+}
+
+function initRun(quote: QuoteEntry): GameRun {
   return {
     runId: crypto.randomUUID(),
-    film,
+    quote,
     status: 'playing',
-    cluesRevealed: 1,
-    wrongGuesses: [],
+    guessedLetters: [],
+    wrongLetters: [],
+    hintsUsed: false,
     startedAtMs: Date.now(),
     elapsedMs: 0,
     solved: false,
@@ -32,49 +42,43 @@ export function useGameRun() {
     return () => { if (tickRef.current) clearInterval(tickRef.current); };
   }, [run?.status]);
 
-  const startGame = useCallback((film: FilmEntry) => {
-    setRun(initRun(film));
+  const startGame = useCallback((quote: QuoteEntry) => {
+    setRun(initRun(quote));
   }, []);
 
-  // Called after Gemini has evaluated the guess
-  const recordGuessResult = useCallback((
-    guessTitle: string,
-    isCorrect: boolean,
-    aiFeedback: string | null
-  ) => {
+  const guessLetter = useCallback((letter: string) => {
     setRun(r => {
       if (!r || r.status !== 'playing') return r;
+      const L = letter.toUpperCase();
+      if (r.guessedLetters.includes(L)) return r;
 
-      if (isCorrect) {
-        const endedAtMs = Date.now();
-        return {
-          ...r, status: 'won', solved: true,
-          endedAtMs, elapsedMs: endedAtMs - r.startedAtMs,
-        };
-      }
+      const letters = quoteLetterSet(r.quote.quote);
+      const isCorrect = letters.has(L);
+      const newGuessed = [...r.guessedLetters, L];
+      const newWrong = isCorrect ? r.wrongLetters : [...r.wrongLetters, L];
 
-      const wrong: WrongGuess = {
-        title: guessTitle,
-        cluesSeenWhenGuessed: r.cluesRevealed,
-        aiFeedback,
-      };
-      const newWrong = [...r.wrongGuesses, wrong];
-      const nextClues = Math.min(r.cluesRevealed + 1, 5);
-      const isLost = newWrong.length >= MAX_WRONG;
-      const endedAtMs = isLost ? Date.now() : undefined;
+      const won = isCorrect && isComplete(r.quote.quote, newGuessed);
+      const lost = newWrong.length >= MAX_WRONG;
+      const status = won ? 'won' : lost ? 'lost' : 'playing';
+      const endedAtMs = status !== 'playing' ? Date.now() : undefined;
 
       return {
         ...r,
-        wrongGuesses: newWrong,
-        cluesRevealed: nextClues,
-        status: isLost ? 'lost' : 'playing',
+        guessedLetters: newGuessed,
+        wrongLetters: newWrong,
+        status,
+        solved: won,
         endedAtMs,
-        elapsedMs: isLost ? Date.now() - r.startedAtMs : r.elapsedMs,
+        elapsedMs: status !== 'playing' ? Date.now() - r.startedAtMs : r.elapsedMs,
       };
     });
   }, []);
 
+  const revealHints = useCallback(() => {
+    setRun(r => r ? { ...r, hintsUsed: true } : r);
+  }, []);
+
   const reset = useCallback(() => setRun(null), []);
 
-  return { run, startGame, recordGuessResult, reset };
+  return { run, startGame, guessLetter, revealHints, reset };
 }

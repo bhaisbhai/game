@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { GameRun } from '../types';
 import { computeScore, getDailyNumber, buildShareText } from '../engine/puzzle';
+import { MAX_WRONG } from '../hooks/useGameRun';
 
 interface ResultsModalProps {
   run: GameRun;
@@ -16,15 +17,14 @@ function fmt(ms: number) {
 }
 
 export function ResultsModal({ run, isDaily, onShare, onPlayAgain, reduceMotion }: ResultsModalProps) {
-  const score = computeScore(run.cluesRevealed, run.solved);
+  const wrongCount = run.wrongLetters.length;
+  const score = computeScore(wrongCount, run.solved);
   const dailyNum = isDaily ? getDailyNumber() : undefined;
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { dialogRef.current?.focus(); }, []);
 
-  const handleShare = () => {
-    onShare(buildShareText(run, dailyNum));
-  };
+  const handleShare = () => onShare(buildShareText(run, dailyNum));
 
   return (
     <div className="results-overlay" role="dialog" aria-modal="true">
@@ -35,47 +35,59 @@ export function ResultsModal({ run, isDaily, onShare, onPlayAgain, reduceMotion 
           <span className="result-emoji" role="img">{score.emoji}</span>
           <div className="result-text">
             <p className="result-label">{score.label}</p>
-            <p className="result-points">{score.points > 0 ? `${score.points} pts` : 'No points'}</p>
+            <p className="result-points">
+              {run.solved
+                ? `${wrongCount} wrong letter${wrongCount !== 1 ? 's' : ''} · ${score.points} pts`
+                : 'No points — better luck next time!'}
+            </p>
           </div>
+        </div>
+
+        {/* Full quote revealed */}
+        <div className="quote-reveal">
+          <p className="quote-reveal-label">{run.solved ? 'You got it!' : 'The quote was:'}</p>
+          <blockquote className="quote-reveal-text">
+            &ldquo;{run.quote.quote}&rdquo;
+          </blockquote>
         </div>
 
         {/* Film reveal */}
         <div className="film-reveal">
-          <p className="film-reveal-label">{run.solved ? "You got it!" : "Today's answer was:"}</p>
-          <p className="film-title-big">{run.film.title}</p>
+          <p className="film-reveal-label">From</p>
+          <p className="film-title-big">{run.quote.film}</p>
           <p className="film-meta">
-            {run.film.year} · {run.film.origin} · {run.film.genre}
+            {run.quote.year}
+            {run.quote.character ? ` · Said by ${run.quote.character}` : ''}
           </p>
         </div>
 
-        {/* All 5 emoji clues revealed */}
-        <div className="all-clues-reveal">
-          <p className="all-clues-label">All 5 clues:</p>
-          <div className="all-clues-row">
-            {run.film.clues.map((clue, i) => (
-              <div key={i} className={`all-clue-tile ${i < run.cluesRevealed ? 'seen' : 'unseen'}`}>
-                <span className="clue-emoji" role="img">{clue}</span>
-                <span className="clue-num">{i + 1}</span>
-              </div>
+        {/* All emoji hints */}
+        <div className="results-emojis">
+          <p className="all-clues-label">Film hints:</p>
+          <div className="results-emoji-row">
+            {run.quote.emojis.map((e, i) => (
+              <span key={i} className="results-hint-emoji" role="img">{e}</span>
             ))}
           </div>
         </div>
 
         {/* Fun fact */}
-        <div className="fun-fact">
-          <span className="fun-fact-icon">🍿</span>
-          <p className="fun-fact-text">{run.film.funFact}</p>
-        </div>
+        {run.quote.funFact && (
+          <div className="fun-fact">
+            <span className="fun-fact-icon">🍿</span>
+            <p className="fun-fact-text">{run.quote.funFact}</p>
+          </div>
+        )}
 
-        {/* Stats row */}
+        {/* Stats */}
         <div className="result-stats">
           <div className="stat-box">
-            <span className="stat-val">{run.solved ? `${run.cluesRevealed}/5` : '✗'}</span>
-            <span className="stat-lbl">Clues used</span>
+            <span className="stat-val">{run.solved ? `${wrongCount}` : '✗'}</span>
+            <span className="stat-lbl">Wrong letters</span>
           </div>
           <div className="stat-box">
-            <span className="stat-val">{run.wrongGuesses.length}</span>
-            <span className="stat-lbl">Wrong guesses</span>
+            <span className="stat-val">{run.guessedLetters.length}</span>
+            <span className="stat-lbl">Letters tried</span>
           </div>
           <div className="stat-box">
             <span className="stat-val">{fmt(run.elapsedMs)}</span>
@@ -83,13 +95,16 @@ export function ResultsModal({ run, isDaily, onShare, onPlayAgain, reduceMotion 
           </div>
         </div>
 
-        {/* Share grid preview */}
+        {/* Share grid — 6 squares: 🟥 wrong, 🟩 survived, ⬛ unused */}
         <div className="share-preview-grid" aria-hidden="true">
-          {Array(5).fill(null).map((_, i) => {
-            const wrong = i < run.wrongGuesses.length;
-            const correct = i === run.wrongGuesses.length && run.solved;
+          {Array(MAX_WRONG).fill(null).map((_, i) => {
+            const wrong = i < wrongCount;
+            const survived = run.solved;
             return (
-              <span key={i} className={`share-sq ${wrong ? 'sq-wrong' : correct ? 'sq-correct' : 'sq-unused'}`} />
+              <span
+                key={i}
+                className={`share-sq ${wrong ? 'sq-wrong' : survived ? 'sq-correct' : 'sq-unused'}`}
+              />
             );
           })}
         </div>
@@ -98,7 +113,7 @@ export function ResultsModal({ run, isDaily, onShare, onPlayAgain, reduceMotion 
         <div className="results-actions">
           <button className="btn-share" onClick={handleShare}>⏪ Share result</button>
           {!isDaily && (
-            <button className="btn-again" onClick={onPlayAgain}>🎬 New film</button>
+            <button className="btn-again" onClick={onPlayAgain}>🎬 New quote</button>
           )}
         </div>
       </div>

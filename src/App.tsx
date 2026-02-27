@@ -4,19 +4,19 @@ import { GameScreen } from './components/GameScreen';
 import { Tutorial } from './components/Tutorial';
 import { StatsModal } from './components/StatsModal';
 import { usePlayerProfile } from './hooks/usePlayerProfile';
-import { getDailyFilm, getPracticeFilm, todayISO } from './engine/puzzle';
-import { FilmEntry } from './data/films';
+import { getDailyQuote, getPracticeQuote, todayISO } from './engine/puzzle';
+import { QuoteEntry } from './data/quotes';
 
 type Screen = 'home' | 'game' | 'tutorial';
 
-const TUTORIAL_KEY = 'reel_masala_tutorial_v1';
+const TUTORIAL_KEY = 'reel_masala_tutorial_v2';
 const hasSeen = () => localStorage.getItem(TUTORIAL_KEY) === '1';
 const markSeen = () => localStorage.setItem(TUTORIAL_KEY, '1');
 
 export function App() {
   const { profile, updateSettings, recordResult, recordShare } = usePlayerProfile();
   const [screen, setScreen] = useState<Screen>(hasSeen() ? 'home' : 'tutorial');
-  const [film, setFilm] = useState<FilmEntry | null>(null);
+  const [quote, setQuote] = useState<QuoteEntry | null>(null);
   const [isDaily, setIsDaily] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -30,19 +30,19 @@ export function App() {
   };
 
   const startDaily = useCallback(() => {
-    setFilm(getDailyFilm());
+    setQuote(getDailyQuote());
     setIsDaily(true);
     setScreen('game');
   }, []);
 
   const startPractice = useCallback(() => {
-    setFilm(getPracticeFilm());
+    setQuote(getPracticeQuote());
     setIsDaily(false);
     setScreen('game');
   }, []);
 
   const goHome = useCallback(() => {
-    setFilm(null);
+    setQuote(null);
     setScreen('home');
   }, []);
 
@@ -71,8 +71,8 @@ export function App() {
     }
   }, [recordShare]);
 
-  const handleResult = useCallback((cluesUsed: number, solved: boolean) => {
-    recordResult(cluesUsed, solved, isDaily ? todayISO() : undefined);
+  const handleResult = useCallback((wrongCount: number, solved: boolean) => {
+    recordResult(wrongCount, solved, isDaily ? todayISO() : undefined);
   }, [recordResult, isDaily]);
 
   return (
@@ -91,9 +91,9 @@ export function App() {
         />
       )}
 
-      {screen === 'game' && film && (
+      {screen === 'game' && quote && (
         <GameScreen
-          film={film}
+          quote={quote}
           isDaily={isDaily}
           profile={profile}
           onHome={goHome}

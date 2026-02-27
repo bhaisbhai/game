@@ -1,41 +1,38 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { TopBar } from './TopBar';
-import { EmojiClues } from './EmojiClues';
-import { GuessInput } from './GuessInput';
-import { GuessFeedback } from './GuessFeedback';
+import { QuoteDisplay } from './QuoteDisplay';
+import { LetterKeyboard } from './LetterKeyboard';
 import { ResultsModal } from './ResultsModal';
-import { useGameRun } from '../hooks/useGameRun';
+import { useGameRun, MAX_WRONG, quoteLetterSet } from '../hooks/useGameRun';
 import { useAudio } from '../hooks/useAudio';
-import { evaluateGuess } from '../services/gemini';
-import { FilmEntry } from '../data/films';
+import { QuoteEntry } from '../data/quotes';
 import { PlayerProfile } from '../types';
 import { getDailyNumber } from '../engine/puzzle';
 
 interface GameScreenProps {
-  film: FilmEntry;
+  quote: QuoteEntry;
   isDaily: boolean;
   profile: PlayerProfile;
   onHome: () => void;
   onShare: (text: string) => void;
   onPlayAgain: () => void;
-  onResult: (cluesUsed: number, solved: boolean) => void;
+  onResult: (wrongCount: number, solved: boolean) => void;
 }
 
-export function GameScreen({ film, isDaily, profile, onHome, onShare, onPlayAgain, onResult }: GameScreenProps) {
-  const { run, startGame, recordGuessResult } = useGameRun();
+export function GameScreen({ quote, isDaily, profile, onHome, onShare, onPlayAgain, onResult }: GameScreenProps) {
+  const { run, startGame, guessLetter, revealHints } = useGameRun();
   const { play } = useAudio(profile.settings.soundEnabled);
-  const [isLoading, setIsLoading] = useState(false);
-  const [latestNewClue, setLatestNewClue] = useState<string | undefined>(undefined);
   const prevStatusRef = useRef<string | undefined>(undefined);
+  const [shakeIdx, setShakeIdx] = useState<number>(-1);
 
   const reduceMotion =
     profile.settings.reduceMotion === 'on' ||
     (profile.settings.reduceMotion === 'system' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
-  useEffect(() => { startGame(film); }, [film]);
+  useEffect(() => { startGame(quote); }, [quote]); // eslint-disable-line
 
-  // Handle game end
+  // Handle game end sounds + result callback
   useEffect(() => {
     if (!run) return;
     if (prevStatusRef.current === run.status) return;
@@ -43,51 +40,49 @@ export function GameScreen({ film, isDaily, profile, onHome, onShare, onPlayAgai
 
     if (run.status === 'won') {
       play('win');
-      onResult(run.cluesRevealed, true);
+      onResult(run.wrongLetters.length, true);
     } else if (run.status === 'lost') {
       play('lose');
-      onResult(run.wrongGuesses.length, false);
+      onResult(run.wrongLetters.length, false);
     }
   }, [run?.status]); // eslint-disable-line
 
-  const handleSubmit = useCallback(async (guess: string) => {
-    if (!run || run.status !== 'playing' || isLoading) return;
+  const handleLetter = useCallback((letter: string) => {
+    if (!run || run.status !== 'playing') return;
+    const L = letter.toUpperCase();
+    if (run.guessedLetters.includes(L)) return;
 
-    setIsLoading(true);
-    setLatestNewClue(undefined);
-    play('select');
-
-    try {
-      const result = await evaluateGuess(
-        guess,
-        run.film,
-        run.cluesRevealed,
-        run.wrongGuesses.length
-      );
-
-      if (result.correct) {
-        play('win');
-        recordGuessResult(guess, true, null);
-      } else {
-        play('wrong');
-        // Show the next clue that will unlock
-        const nextClueIdx = Math.min(run.cluesRevealed, 4); // 0-indexed
-        const nextEmoji = run.film.clues[nextClueIdx];
-        if (run.cluesRevealed < 5) {
-          setTimeout(() => {
-            play('reveal');
-            setLatestNewClue(nextEmoji);
-          }, 400);
-        }
-        recordGuessResult(guess, false, result.hint);
-      }
-    } finally {
-      setIsLoading(false);
+    const inQuote = quoteLetterSet(run.quote.quote).has(L);
+    if (inQuote) {
+      play('reveal');
+    } else {
+      play('wrong');
+      // Shake the newest wrong frame
+      const newWrongIdx = run.wrongLetters.length; // index after this guess
+      setShakeIdx(newWrongIdx);
+      setTimeout(() => setShakeIdx(-1), 500);
     }
-  }, [run, isLoading, play, recordGuessResult]);
+
+    guessLetter(L);
+  }, [run, play, guessLetter]);
+
+  // Physical keyboard support
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const key = e.key.toUpperCase();
+      if (key.length === 1 && key >= 'A' && key <= 'Z') {
+        handleLetter(key);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handleLetter]);
 
   if (!run) return null;
+
   const done = run.status !== 'playing';
+  const wrongCount = run.wrongLetters.length;
   const puzzleLabel = isDaily ? `Daily #${getDailyNumber()}` : 'Practice';
 
   return (
@@ -95,31 +90,71 @@ export function GameScreen({ film, isDaily, profile, onHome, onShare, onPlayAgai
       <TopBar
         puzzleLabel={puzzleLabel}
         elapsedMs={run.elapsedMs}
-        attempt={run.wrongGuesses.length + 1}
-        maxAttempts={5}
+        attempt={wrongCount + 1}
+        maxAttempts={MAX_WRONG}
         onHome={onHome}
       />
 
       <div className="game-body">
-        <EmojiClues
-          clues={run.film.clues}
-          revealed={run.cluesRevealed}
-          reduceMotion={reduceMotion}
+        {/* Wrong guess tracker */}
+        <div className="wrong-tracker" aria-label={`${wrongCount} of ${MAX_WRONG} wrong guesses`}>
+          <span className="tracker-label">
+            {wrongCount === 0
+              ? 'No wrong letters yet'
+              : `${wrongCount} wrong letter${wrongCount !== 1 ? 's' : ''}`}
+          </span>
+          <div className="tracker-frames">
+            {Array(MAX_WRONG).fill(null).map((_, i) => (
+              <div
+                key={i}
+                className={`tracker-frame ${i < wrongCount ? 'used' : ''} ${i === shakeIdx && !reduceMotion ? 'shake' : ''}`}
+                aria-hidden="true"
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Quote source hint */}
+        <p className="quote-source-hint">
+          Famous quote · {run.quote.year}
+        </p>
+
+        {/* The quote with letter tiles */}
+        <QuoteDisplay
+          quote={run.quote.quote}
+          guessedLetters={run.guessedLetters}
         />
 
-        {!done && (
-          <GuessInput
-            onSubmit={handleSubmit}
+        {/* Optional emoji hints */}
+        {!run.hintsUsed ? (
+          <button
+            className="hints-reveal-btn"
+            onClick={revealHints}
             disabled={done}
-            isLoading={isLoading}
-            attempt={run.wrongGuesses.length + 1}
-          />
+          >
+            🎬 Show film hints
+          </button>
+        ) : (
+          <div className="hints-area">
+            <span className="hints-label">Film hints:</span>
+            <div className="hints-emoji-row">
+              {run.quote.emojis.map((e, i) => (
+                <span key={i} className="hint-emoji" role="img">{e}</span>
+              ))}
+            </div>
+          </div>
         )}
 
-        <GuessFeedback
-          guesses={run.wrongGuesses}
-          newClueEmoji={latestNewClue}
-        />
+        {/* Keyboard — hide when done */}
+        {!done && (
+          <LetterKeyboard
+            quoteText={run.quote.quote}
+            guessedLetters={run.guessedLetters}
+            wrongLetters={run.wrongLetters}
+            onGuess={handleLetter}
+            disabled={done}
+          />
+        )}
       </div>
 
       {done && (

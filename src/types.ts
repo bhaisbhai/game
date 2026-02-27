@@ -1,21 +1,14 @@
-import { FilmEntry, Origin, Genre } from './data/films';
-
-export type { Origin, Genre };
+import { QuoteEntry } from './data/quotes';
 
 export type RunStatus = 'playing' | 'won' | 'lost';
 
-export interface WrongGuess {
-  title: string;
-  cluesSeenWhenGuessed: number;
-  aiFeedback: string | null; // Gemini-generated cryptic hint
-}
-
 export interface GameRun {
   runId: string;
-  film: FilmEntry;
+  quote: QuoteEntry;
   status: RunStatus;
-  cluesRevealed: number;   // 1..5
-  wrongGuesses: WrongGuess[];
+  guessedLetters: string[];  // uppercase A-Z letters tried
+  wrongLetters: string[];    // subset of guessedLetters not in quote
+  hintsUsed: boolean;        // whether emoji hints were revealed
   startedAtMs: number;
   endedAtMs?: number;
   elapsedMs: number;
@@ -23,7 +16,6 @@ export interface GameRun {
 }
 
 export interface ScoreResult {
-  cluesUsed: number;
   label: string;
   emoji: string;
   points: number;
@@ -42,7 +34,8 @@ export interface PlayerStats {
   solvedTotal: number;
   gamesPlayed: number;
   shareCount: number;
-  clueDistribution: [number, number, number, number, number, number]; // [1clue, 2, 3, 4, 5, failed]
+  // [0wrong, 1wrong, 2wrong, 3wrong, 4-5wrong, failed]
+  clueDistribution: [number, number, number, number, number, number];
 }
 
 export interface PlayerProfile {
