@@ -13,7 +13,7 @@ export function CassetteSlots({ slots, activeSlot, revealedSlots, onSlotClick, d
   const revealedIndices = new Set(revealedSlots.map(r => r.slotIndex));
 
   return (
-    <div className="cassette-slots" role="group" aria-label="Beat sequence — 5 slots to fill">
+    <div className="cassette-slots" role="group" aria-label="Watchlist sequence — 5 slots to fill">
       {slots.map((beat, i) => {
         const isActive = i === activeSlot && !disabled;
         const isRevealed = revealedIndices.has(i);

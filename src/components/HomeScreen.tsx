@@ -22,7 +22,7 @@ export function HomeScreen({ stats, alreadyPlayedToday, onPlayDaily, onPlayPract
           </div>
         </div>
         <h1 className="home-title">Mixtape Masala</h1>
-        <p className="home-sub">Daily beat puzzle · Decode the 5-beat mix</p>
+        <p className="home-sub">Daily film &amp; TV puzzle · Decode the 5-title watchlist</p>
       </div>
 
       <div className="home-actions">
@@ -63,7 +63,7 @@ export function HomeScreen({ stats, alreadyPlayedToday, onPlayDaily, onPlayPract
       </button>
 
       <p className="home-tagline">
-        New mix drops every day at midnight · No sign-up needed
+        90s &amp; 00s films, Bollywood &amp; TV · New watchlist every day · No sign-up needed
       </p>
     </div>
   );

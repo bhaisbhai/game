@@ -27,19 +27,21 @@ export function BeatPalette({
 
   return (
     <div className="beat-palette">
+      <p className="palette-label">Pick a title for slot {activeSlot + 1} <span className="palette-count">(12 titles · 5 in the mix)</span></p>
       <div className="palette-grid">
-        {BEATS.map(beat => (
+        {BEATS.map(title => (
           <button
-            key={beat.id}
+            key={title.id}
             className="beat-btn"
-            style={{ '--beat-color': beat.colorToken } as React.CSSProperties}
-            onClick={() => { if (!disabled) onSelect(beat.id); }}
+            style={{ '--beat-color': title.colorToken } as React.CSSProperties}
+            onClick={() => { if (!disabled) onSelect(title.id); }}
             disabled={disabled}
-            aria-label={`Select ${beat.label}`}
-            title={beat.label}
+            aria-label={`Select ${title.label} (${title.sublabel})`}
+            title={`${title.label} — ${title.sublabel}`}
           >
-            <span className="beat-emoji" role="img" aria-hidden="true">{beat.emoji}</span>
-            <span className="beat-label">{beat.label}</span>
+            <span className="beat-emoji" role="img" aria-hidden="true">{title.emoji}</span>
+            <span className="beat-label">{title.label}</span>
+            <span className="beat-sublabel">{title.sublabel}</span>
           </button>
         ))}
       </div>
@@ -49,10 +51,10 @@ export function BeatPalette({
           className="action-btn hint-btn"
           onClick={onHint}
           disabled={!canHint}
-          aria-label={hintsUsed >= 1 ? 'Hint used' : 'Use spice hint (reveals one slot)'}
-          title="Spice hint — reveals one slot"
+          aria-label={hintsUsed >= 1 ? 'Hint used' : 'Use popcorn hint — reveals one slot'}
+          title="Popcorn hint — reveals one slot"
         >
-          {hintsUsed >= 1 ? '🌶️ Used' : '🌶️ Hint'}
+          {hintsUsed >= 1 ? '🍿 Used' : '🍿 Hint'}
         </button>
 
         <button

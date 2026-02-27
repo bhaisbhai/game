@@ -90,10 +90,10 @@ export function GameScreen({
     const ms = run.elapsedMs;
     const secs = Math.floor(ms / 1000);
     const time = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
-    const hint = run.hintsUsed > 0 ? ' 🌶️' : '';
+    const hint = run.hintsUsed > 0 ? ' 🍿' : '';
     const grade = run.score?.grade ? ` [${run.score.grade}]` : '';
     const rows = run.guesses.map(g => g.marks.map(m => ({ exact: '🟩', present: '🟨', absent: '⬛' }[m])).join('')).join('\n');
-    const text = `Mixtape Masala — Daily Mix ${num}: ${attempts} in ${time}${hint}${grade} ⏪📼\n\n${rows}\n\nhttps://fantastic-creponne-bc083b.netlify.app`;
+    const text = `Mixtape Masala — Daily Watchlist ${num}: ${attempts} in ${time}${hint}${grade} 🎬📼\n\n${rows}\n\nhttps://fantastic-creponne-bc083b.netlify.app`;
     onShare(text);
   }, [state, onShare]);
 

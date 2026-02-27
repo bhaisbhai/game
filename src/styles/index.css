@@ -306,7 +306,7 @@ button:focus-visible {
 }
 
 .cassette-slots::before {
-  content: '🎵 BUILD YOUR MIX';
+  content: '🎬 BUILD YOUR WATCHLIST';
   position: absolute;
   top: -0.6rem;
   left: 50%;
@@ -427,10 +427,25 @@ button:focus-visible {
   border-radius: var(--radius-lg);
 }
 
+.palette-label {
+  font-size: 0.7rem;
+  color: var(--text3);
+  text-align: center;
+  font-family: var(--font-pixel);
+  line-height: 1.8;
+}
+
+.palette-count {
+  display: block;
+  font-size: 0.55rem;
+  color: var(--text3);
+  margin-top: 0.1rem;
+}
+
 .palette-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .beat-btn {
@@ -455,8 +470,10 @@ button:focus-visible {
 .beat-btn:active:not(:disabled) { transform: scale(0.96); }
 .beat-btn:disabled { opacity: 0.4; cursor: default; }
 
-.beat-emoji { font-size: 1.5rem; line-height: 1; }
-.beat-label { font-size: 0.55rem; font-family: var(--font-pixel); color: var(--text2); text-align: center; }
+.beat-btn { min-height: 72px; }
+.beat-emoji { font-size: 1.3rem; line-height: 1; }
+.beat-label { font-size: 0.5rem; font-family: var(--font-pixel); color: var(--text2); text-align: center; line-height: 1.4; }
+.beat-sublabel { font-size: 0.42rem; color: var(--text3); text-align: center; font-family: var(--font-body); margin-top: 0.1rem; }
 
 .palette-actions {
   display: flex;

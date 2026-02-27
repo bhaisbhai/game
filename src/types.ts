@@ -2,33 +2,46 @@ export type GameMode = 'daily' | 'challenge' | 'practice';
 export type RunStatus = 'in_progress' | 'won' | 'lost' | 'abandoned';
 export type SlotMark = 'exact' | 'present' | 'absent';
 
+// 12 iconic 90s–00s titles: Western films, Bollywood, & UK-popular shows
 export type BeatId =
-  | 'Dhol'
-  | 'Synth'
-  | 'Clap'
-  | 'Bass'
-  | 'Chime'
-  | 'Tabla'
-  | 'Disco'
-  | 'Snap';
+  | 'Matrix'
+  | 'Titanic'
+  | 'Friends'
+  | 'Gladiator'
+  | 'DDLJ'
+  | 'KKCH'
+  | 'Lagaan'
+  | 'DCH'
+  | 'SisterSister'
+  | 'Neighbours'
+  | 'KenanKel'
+  | 'FreshPrince';
 
 export interface BeatMeta {
   id: BeatId;
   label: string;
+  sublabel: string;
   colorToken: string;
-  glyph: string;
   emoji: string;
+  glyph: string;
 }
 
 export const BEATS: BeatMeta[] = [
-  { id: 'Dhol',  label: 'Dhol',  colorToken: '#e85d04', glyph: '🥁', emoji: '🥁' },
-  { id: 'Synth', label: 'Synth', colorToken: '#7209b7', glyph: '🎹', emoji: '🎹' },
-  { id: 'Clap',  label: 'Clap',  colorToken: '#f72585', glyph: '👏', emoji: '👏' },
-  { id: 'Bass',  label: 'Bass',  colorToken: '#4361ee', glyph: '🎸', emoji: '🎸' },
-  { id: 'Chime', label: 'Chime', colorToken: '#4cc9f0', glyph: '🔔', emoji: '🔔' },
-  { id: 'Tabla', label: 'Tabla', colorToken: '#80b918', glyph: '🪘', emoji: '🪘' },
-  { id: 'Disco', label: 'Disco', colorToken: '#ff9e00', glyph: '🪩', emoji: '🪩' },
-  { id: 'Snap',  label: 'Snap',  colorToken: '#ef476f', glyph: '🫰', emoji: '🫰' },
+  // Western films
+  { id: 'Matrix',      label: 'The Matrix',     sublabel: '1999 · Sci-fi',     colorToken: '#39ff14', emoji: '🕶️', glyph: '🕶️' },
+  { id: 'Titanic',     label: 'Titanic',         sublabel: '1997 · Drama',      colorToken: '#4cc9f0', emoji: '🚢', glyph: '🚢' },
+  { id: 'Gladiator',   label: 'Gladiator',       sublabel: '2000 · Action',     colorToken: '#e85d04', emoji: '⚔️', glyph: '⚔️' },
+  // Bollywood
+  { id: 'DDLJ',        label: 'DDLJ',            sublabel: '1995 · Bollywood',  colorToken: '#ffd60a', emoji: '🌻', glyph: '🌻' },
+  { id: 'KKCH',        label: 'Kuch Kuch',       sublabel: '1998 · Bollywood',  colorToken: '#f72585', emoji: '❤️', glyph: '❤️' },
+  { id: 'Lagaan',      label: 'Lagaan',          sublabel: '2001 · Bollywood',  colorToken: '#80b918', emoji: '🏏', glyph: '🏏' },
+  { id: 'DCH',         label: 'Dil Chahta Hai',  sublabel: '2001 · Bollywood',  colorToken: '#7209b7', emoji: '🎭', glyph: '🎭' },
+  // TV — UK-popular shows
+  { id: 'Friends',     label: 'Friends',         sublabel: '1994 · TV',         colorToken: '#ff9e00', emoji: '☕', glyph: '☕' },
+  { id: 'SisterSister',label: 'Sister Sister',   sublabel: '1994 · TV',         colorToken: '#ff6b9d', emoji: '👯', glyph: '👯' },
+  { id: 'Neighbours',  label: 'Neighbours',      sublabel: '90s · UK/Aus TV',   colorToken: '#06d6a0', emoji: '🏡', glyph: '🏡' },
+  { id: 'KenanKel',    label: 'Kenan & Kel',     sublabel: '1996 · TV',         colorToken: '#ff6600', emoji: '🧴', glyph: '🧴' },
+  { id: 'FreshPrince', label: 'Fresh Prince',    sublabel: '1990 · TV',         colorToken: '#9b5de5', emoji: '👑', glyph: '👑' },
 ];
 
 export const BEAT_MAP: Record<BeatId, BeatMeta> = Object.fromEntries(
@@ -43,7 +56,7 @@ export interface PuzzleDefinition {
   allowedBeats: BeatId[];
   secretLength: 5;
   maxAttempts: 8;
-  secret: BeatId[]; // client-only MVP
+  secret: BeatId[];
 }
 
 export interface Guess {

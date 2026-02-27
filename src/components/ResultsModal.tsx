@@ -21,12 +21,12 @@ function buildShareText(run: GameRun, puzzle: PuzzleDefinition): string {
   const num = puzzle.mode === 'daily' ? `#${getDailyNumber()}` : 'Practice';
   const attempts = run.status === 'won' ? `${run.guesses.length}/${puzzle.maxAttempts}` : 'X/8';
   const time = formatElapsed(run.elapsedMs);
-  const hint = run.hintsUsed > 0 ? ' 🌶️' : '';
+  const hint = run.hintsUsed > 0 ? ' 🍿' : '';
   const grade = run.score?.grade ?? '';
 
   const rows = run.guesses.map((g: Guess) => g.marks.map((m: SlotMark) => GRID_MARKS[m]).join('')).join('\n');
 
-  return `Mixtape Masala — Daily Mix ${num}: ${attempts} in ${time}${hint} [${grade}]\n\n${rows}\n\nhttps://fantastic-creponne-bc083b.netlify.app`;
+  return `Mixtape Masala — Daily Watchlist ${num}: ${attempts} in ${time}${hint} [${grade}] 🎬📼\n\n${rows}\n\nhttps://fantastic-creponne-bc083b.netlify.app`;
 }
 
 export function ResultsModal({ run, puzzle, onShare, onPlayAgain, reduceMotion }: ResultsModalProps) {
@@ -76,7 +76,7 @@ export function ResultsModal({ run, puzzle, onShare, onPlayAgain, reduceMotion }
           </div>
           {run.hintsUsed > 0 && (
             <div className="stat-box">
-              <span className="stat-val">🌶️ 1</span>
+              <span className="stat-val">🍿 1</span>
               <span className="stat-lbl">Hint used</span>
             </div>
           )}
@@ -84,7 +84,7 @@ export function ResultsModal({ run, puzzle, onShare, onPlayAgain, reduceMotion }
 
         {/* Secret reveal */}
         <div className="secret-reveal">
-          <p className="secret-label">Today's mix was:</p>
+          <p className="secret-label">Today's watchlist was:</p>
           <div className="secret-row">
             {puzzle.secret.map((beat, i) => (
               <div key={i} className="secret-tile" style={{ '--beat-color': BEAT_MAP[beat].colorToken } as React.CSSProperties}>
