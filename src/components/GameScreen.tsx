@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { TopBar } from './TopBar';
 import { EmojiClues } from './EmojiClues';
 import { GuessInput } from './GuessInput';
@@ -6,6 +6,7 @@ import { GuessFeedback } from './GuessFeedback';
 import { ResultsModal } from './ResultsModal';
 import { useGameRun } from '../hooks/useGameRun';
 import { useAudio } from '../hooks/useAudio';
+import { evaluateGuess } from '../services/gemini';
 import { FilmEntry } from '../data/films';
 import { PlayerProfile } from '../types';
 import { getDailyNumber } from '../engine/puzzle';
@@ -21,8 +22,11 @@ interface GameScreenProps {
 }
 
 export function GameScreen({ film, isDaily, profile, onHome, onShare, onPlayAgain, onResult }: GameScreenProps) {
-  const { run, startGame, submitGuess } = useGameRun();
+  const { run, startGame, recordGuessResult } = useGameRun();
   const { play } = useAudio(profile.settings.soundEnabled);
+  const [isLoading, setIsLoading] = useState(false);
+  const [latestNewClue, setLatestNewClue] = useState<string | undefined>(undefined);
+  const prevStatusRef = useRef<string | undefined>(undefined);
 
   const reduceMotion =
     profile.settings.reduceMotion === 'on' ||
@@ -31,23 +35,56 @@ export function GameScreen({ film, isDaily, profile, onHome, onShare, onPlayAgai
 
   useEffect(() => { startGame(film); }, [film]);
 
-  // Detect status change → record result + play sound
+  // Handle game end
   useEffect(() => {
     if (!run) return;
-    if (run.status === 'won') { play('win'); onResult(run.cluesRevealed, true); }
-    else if (run.status === 'lost') { play('lose'); onResult(run.cluesRevealed, false); }
+    if (prevStatusRef.current === run.status) return;
+    prevStatusRef.current = run.status;
+
+    if (run.status === 'won') {
+      play('win');
+      onResult(run.cluesRevealed, true);
+    } else if (run.status === 'lost') {
+      play('lose');
+      onResult(run.wrongGuesses.length, false);
+    }
   }, [run?.status]); // eslint-disable-line
 
-  const handleGuess = useCallback((title: string) => {
-    const result = submitGuess(title);
-    if (result === 'correct') play('win');
-    else if (result === 'wrong') {
-      play('wrong');
-      setTimeout(() => play('reveal'), 350);
-    } else {
-      play('tick'); // already guessed
+  const handleSubmit = useCallback(async (guess: string) => {
+    if (!run || run.status !== 'playing' || isLoading) return;
+
+    setIsLoading(true);
+    setLatestNewClue(undefined);
+    play('select');
+
+    try {
+      const result = await evaluateGuess(
+        guess,
+        run.film,
+        run.cluesRevealed,
+        run.wrongGuesses.length
+      );
+
+      if (result.correct) {
+        play('win');
+        recordGuessResult(guess, true, null);
+      } else {
+        play('wrong');
+        // Show the next clue that will unlock
+        const nextClueIdx = Math.min(run.cluesRevealed, 4); // 0-indexed
+        const nextEmoji = run.film.clues[nextClueIdx];
+        if (run.cluesRevealed < 5) {
+          setTimeout(() => {
+            play('reveal');
+            setLatestNewClue(nextEmoji);
+          }, 400);
+        }
+        recordGuessResult(guess, false, result.hint);
+      }
+    } finally {
+      setIsLoading(false);
     }
-  }, [submitGuess, play]);
+  }, [run, isLoading, play, recordGuessResult]);
 
   if (!run) return null;
   const done = run.status !== 'playing';
@@ -72,13 +109,17 @@ export function GameScreen({ film, isDaily, profile, onHome, onShare, onPlayAgai
 
         {!done && (
           <GuessInput
-            onSubmit={handleGuess}
+            onSubmit={handleSubmit}
             disabled={done}
-            attempt={run.wrongGuesses.length}
+            isLoading={isLoading}
+            attempt={run.wrongGuesses.length + 1}
           />
         )}
 
-        <GuessFeedback guesses={run.wrongGuesses} />
+        <GuessFeedback
+          guesses={run.wrongGuesses}
+          newClueEmoji={latestNewClue}
+        />
       </div>
 
       {done && (

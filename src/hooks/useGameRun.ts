@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { GameRun, WrongGuess } from '../types';
-import { FilmEntry, FILMS } from '../data/films';
+import { FilmEntry } from '../data/films';
 
-const MAX_CLUES = 5;
+const MAX_WRONG = 5;
 
 function initRun(film: FilmEntry): GameRun {
   return {
@@ -15,10 +15,6 @@ function initRun(film: FilmEntry): GameRun {
     elapsedMs: 0,
     solved: false,
   };
-}
-
-function getDecade(year: number): string {
-  return year >= 2000 ? '00s' : '90s';
 }
 
 export function useGameRun() {
@@ -40,45 +36,33 @@ export function useGameRun() {
     setRun(initRun(film));
   }, []);
 
-  const submitGuess = useCallback((guessTitle: string): 'correct' | 'wrong' | 'already_guessed' => {
-    if (!run || run.status !== 'playing') return 'wrong';
-
-    // Check for duplicate guess
-    const alreadyGuessed = run.wrongGuesses.some(
-      g => g.title.toLowerCase() === guessTitle.toLowerCase()
-    );
-    if (alreadyGuessed) return 'already_guessed';
-
-    const isCorrect = guessTitle.toLowerCase().trim() === run.film.title.toLowerCase().trim();
-
-    if (isCorrect) {
-      const endedAtMs = Date.now();
-      setRun(r => r ? {
-        ...r,
-        status: 'won',
-        solved: true,
-        endedAtMs,
-        elapsedMs: endedAtMs - r.startedAtMs,
-      } : r);
-      return 'correct';
-    }
-
-    // Build feedback by looking up the guessed film in our database
-    const guessedFilm = FILMS.find(f => f.title.toLowerCase() === guessTitle.toLowerCase());
-    const wrong: WrongGuess = {
-      title: guessTitle,
-      cluesSeenWhenGuessed: run.cluesRevealed,
-      eraMatch: guessedFilm ? getDecade(guessedFilm.year) === getDecade(run.film.year) : false,
-      originMatch: guessedFilm ? guessedFilm.origin === run.film.origin : false,
-      genreMatch: guessedFilm ? guessedFilm.genre === run.film.genre : false,
-    };
-
+  // Called after Gemini has evaluated the guess
+  const recordGuessResult = useCallback((
+    guessTitle: string,
+    isCorrect: boolean,
+    aiFeedback: string | null
+  ) => {
     setRun(r => {
-      if (!r) return r;
+      if (!r || r.status !== 'playing') return r;
+
+      if (isCorrect) {
+        const endedAtMs = Date.now();
+        return {
+          ...r, status: 'won', solved: true,
+          endedAtMs, elapsedMs: endedAtMs - r.startedAtMs,
+        };
+      }
+
+      const wrong: WrongGuess = {
+        title: guessTitle,
+        cluesSeenWhenGuessed: r.cluesRevealed,
+        aiFeedback,
+      };
       const newWrong = [...r.wrongGuesses, wrong];
-      const nextClues = Math.min(r.cluesRevealed + 1, MAX_CLUES);
-      const isLost = newWrong.length >= MAX_CLUES;
+      const nextClues = Math.min(r.cluesRevealed + 1, 5);
+      const isLost = newWrong.length >= MAX_WRONG;
       const endedAtMs = isLost ? Date.now() : undefined;
+
       return {
         ...r,
         wrongGuesses: newWrong,
@@ -88,10 +72,9 @@ export function useGameRun() {
         elapsedMs: isLost ? Date.now() - r.startedAtMs : r.elapsedMs,
       };
     });
-    return 'wrong';
-  }, [run]);
+  }, []);
 
   const reset = useCallback(() => setRun(null), []);
 
-  return { run, startGame, submitGuess, reset };
+  return { run, startGame, recordGuessResult, reset };
 }

@@ -195,7 +195,11 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .clues-sub { font-size: 0.72rem; color: var(--text2); }
 
 /* ── GUESS INPUT ── */
-.guess-input-wrap { position: relative; }
+.guess-input-wrap { display: flex; flex-direction: column; gap: 0.4rem; }
+.guess-input-label {
+  font-size: 0.72rem; color: var(--text2); text-transform: uppercase;
+  letter-spacing: 0.07em; font-weight: 600;
+}
 .guess-input-row { display: flex; gap: 0.5rem; }
 
 .guess-input {
@@ -224,6 +228,19 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .guess-submit-btn:active:not(:disabled) { transform: scale(0.95); }
 .guess-submit-btn:disabled { opacity: 0.4; cursor: default; }
 
+.guess-input-row.loading .guess-input { border-color: var(--accent2); opacity: 0.7; }
+.btn-loading { background: var(--accent2) !important; }
+
+/* Spinner */
+.spinner {
+  display: inline-block; width: 18px; height: 18px;
+  border: 3px solid rgba(0,0,0,0.3); border-top-color: #000;
+  border-radius: 50%; animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.guess-hint-text { font-size: 0.65rem; color: var(--text3); font-style: italic; }
+
 .suggestions-list {
   position: absolute; top: calc(100% + 4px); left: 0; right: 0;
   background: var(--bg2); border: 1px solid var(--border2);
@@ -239,20 +256,57 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .suggestion-item:hover, .suggestion-item.active { background: var(--surface2); color: var(--gold); }
 
 /* ── GUESS FEEDBACK ── */
-.guess-feedback { display: flex; flex-direction: column; gap: 0.5rem; }
-.feedback-header { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text2); }
+.guess-feedback { display: flex; flex-direction: column; gap: 0.6rem; }
 
-.feedback-list { display: flex; flex-direction: column; gap: 0.4rem; list-style: none; }
-.feedback-item {
+.feedback-card {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 0.6rem 0.75rem;
-  display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem;
+  border-radius: var(--radius); overflow: hidden;
+  transition: border-color 0.2s;
 }
-.feedback-x { font-size: 0.9rem; }
-.feedback-title { font-weight: 600; font-size: 0.9rem; flex: 1; min-width: 120px; }
-.feedback-clue-note { font-size: 0.65rem; color: var(--text2); }
-.feedback-tags { display: flex; gap: 0.3rem; width: 100%; }
+.feedback-card.feedback-latest {
+  border-color: var(--accent2);
+  box-shadow: 0 0 12px rgba(147, 51, 234, 0.2);
+  animation: card-in 0.35s ease;
+}
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
+.feedback-top {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border);
+}
+.feedback-x { font-size: 0.85rem; flex-shrink: 0; }
+.feedback-title { font-weight: 700; font-size: 0.9rem; flex: 1; color: var(--text); }
+.feedback-clues-seen { font-size: 0.75rem; flex-shrink: 0; }
+
+.feedback-ai-hint {
+  display: flex; gap: 0.6rem; align-items: flex-start;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, rgba(147,51,234,0.08), rgba(192,132,252,0.05));
+}
+.ai-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+.ai-hint-text {
+  font-size: 0.85rem; color: var(--text2); line-height: 1.55;
+  font-style: italic;
+}
+
+.new-clue-flash {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,184,0,0.06));
+  border-top: 1px solid rgba(255,215,0,0.2);
+  animation: flash-in 0.4s ease;
+}
+@keyframes flash-in {
+  0% { opacity: 0; background-color: rgba(255,215,0,0.25); }
+  100% { opacity: 1; }
+}
+.new-clue-label { font-size: 0.7rem; color: var(--gold2); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.new-clue-emoji { font-size: 1.3rem; }
+
+/* Keep tag styles for tutorial */
 .tag {
   font-size: 0.62rem; font-weight: 700; padding: 0.2rem 0.5rem;
   border-radius: 999px; letter-spacing: 0.03em;

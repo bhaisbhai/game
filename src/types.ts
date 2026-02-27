@@ -7,10 +7,7 @@ export type RunStatus = 'playing' | 'won' | 'lost';
 export interface WrongGuess {
   title: string;
   cluesSeenWhenGuessed: number;
-  // metadata comparison feedback
-  eraMatch: boolean;
-  originMatch: boolean;
-  genreMatch: boolean;
+  aiFeedback: string | null; // Gemini-generated cryptic hint
 }
 
 export interface GameRun {

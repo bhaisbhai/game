@@ -3,37 +3,37 @@ import { WrongGuess } from '../types';
 
 interface GuessFeedbackProps {
   guesses: WrongGuess[];
+  newClueEmoji?: string; // the freshly revealed emoji, for the reveal flash
 }
 
-export function GuessFeedback({ guesses }: GuessFeedbackProps) {
+export function GuessFeedback({ guesses, newClueEmoji }: GuessFeedbackProps) {
   if (guesses.length === 0) return null;
 
   return (
-    <div className="guess-feedback" aria-label="Previous wrong guesses">
-      <p className="feedback-header">Wrong guesses</p>
-      <ul className="feedback-list">
-        {guesses.map((g, i) => (
-          <li key={i} className="feedback-item">
+    <div className="guess-feedback" aria-live="polite" aria-label="Guess history with AI hints">
+      {[...guesses].reverse().map((g, i) => (
+        <div key={i} className={`feedback-card ${i === 0 ? 'feedback-latest' : ''}`}>
+          <div className="feedback-top">
             <span className="feedback-x" aria-hidden="true">❌</span>
-            <span className="feedback-title">{g.title}</span>
-            <span className="feedback-clue-note">({g.cluesSeenWhenGuessed} clue{g.cluesSeenWhenGuessed !== 1 ? 's' : ''} seen)</span>
-            <div className="feedback-tags">
-              <span className={`tag ${g.eraMatch ? 'tag-yes' : 'tag-no'}`}
-                title={g.eraMatch ? 'Same era' : 'Different era'}>
-                {g.eraMatch ? '✓' : '✗'} Era
-              </span>
-              <span className={`tag ${g.originMatch ? 'tag-yes' : 'tag-no'}`}
-                title={g.originMatch ? 'Same origin' : 'Different origin'}>
-                {g.originMatch ? '✓' : '✗'} Origin
-              </span>
-              <span className={`tag ${g.genreMatch ? 'tag-yes' : 'tag-no'}`}
-                title={g.genreMatch ? 'Same genre' : 'Different genre'}>
-                {g.genreMatch ? '✓' : '✗'} Genre
-              </span>
+            <span className="feedback-title">&ldquo;{g.title}&rdquo;</span>
+            <span className="feedback-clues-seen" aria-label={`Seen ${g.cluesSeenWhenGuessed} clues`}>
+              {Array(g.cluesSeenWhenGuessed).fill('🎬').join('')}
+            </span>
+          </div>
+          {g.aiFeedback && (
+            <div className="feedback-ai-hint">
+              <span className="ai-icon" aria-hidden="true">🤖</span>
+              <p className="ai-hint-text">{g.aiFeedback}</p>
             </div>
-          </li>
-        ))}
-      </ul>
+          )}
+          {i === 0 && newClueEmoji && (
+            <div className="new-clue-flash" aria-label={`New clue unlocked: ${newClueEmoji}`}>
+              <span className="new-clue-label">New clue unlocked →</span>
+              <span className="new-clue-emoji">{newClueEmoji}</span>
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
