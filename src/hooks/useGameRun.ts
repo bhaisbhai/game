@@ -1,164 +1,97 @@
-import { useReducer, useEffect, useRef, useCallback } from 'react';
-import { GameState, GameAction, GameRun, PuzzleDefinition, BeatId } from '../types';
-import { evaluateGuess } from '../engine/evaluate';
-import { computeScore } from '../engine/scoring';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { GameRun, WrongGuess } from '../types';
+import { FilmEntry, FILMS } from '../data/films';
 
-function initRun(puzzle: PuzzleDefinition): GameRun {
+const MAX_CLUES = 5;
+
+function initRun(film: FilmEntry): GameRun {
   return {
     runId: crypto.randomUUID(),
-    puzzleId: puzzle.puzzleId,
-    mode: puzzle.mode,
-    status: 'in_progress',
+    film,
+    status: 'playing',
+    cluesRevealed: 1,
+    wrongGuesses: [],
     startedAtMs: Date.now(),
     elapsedMs: 0,
-    guesses: [],
-    hintsUsed: 0,
-    revealedSlots: [],
+    solved: false,
   };
 }
 
-function gameReducer(state: GameState, action: GameAction): GameState {
-  switch (action.type) {
-    case 'START_GAME': {
-      return {
-        run: initRun(action.puzzle),
-        puzzle: action.puzzle,
-        currentSlots: Array(5).fill(null),
-        activeSlot: 0,
-      };
-    }
-
-    case 'SELECT_BEAT': {
-      if (!state.run || state.run.status !== 'in_progress') return state;
-      const slots = [...state.currentSlots];
-      slots[action.slotIndex] = action.beat;
-      const nextEmpty = slots.findIndex((s, i) => i > action.slotIndex && s === null);
-      const activeSlot = nextEmpty !== -1 ? nextEmpty : action.slotIndex;
-      return { ...state, currentSlots: slots, activeSlot };
-    }
-
-    case 'CLEAR_SLOT': {
-      if (!state.run || state.run.status !== 'in_progress') return state;
-      const slots = [...state.currentSlots];
-      slots[action.slotIndex] = null;
-      return { ...state, currentSlots: slots, activeSlot: action.slotIndex };
-    }
-
-    case 'SUBMIT_GUESS': {
-      if (!state.run || !state.puzzle || state.run.status !== 'in_progress') return state;
-      const filled = state.currentSlots.filter(Boolean) as BeatId[];
-      if (filled.length !== 5) return state;
-
-      const result = evaluateGuess(filled, state.puzzle.secret);
-      const guess = {
-        guessId: crypto.randomUUID(),
-        submittedAtMs: Date.now(),
-        ...result,
-      };
-
-      const guesses = [...state.run.guesses, guess];
-      const won = result.exactCount === 5;
-      const lost = !won && guesses.length >= state.puzzle.maxAttempts;
-
-      let run: GameRun = { ...state.run, guesses };
-      if (won || lost) {
-        const endedAtMs = Date.now();
-        const elapsedMs = endedAtMs - run.startedAtMs;
-        const score = won ? computeScore(guesses.length, elapsedMs, run.hintsUsed) : undefined;
-        run = { ...run, status: won ? 'won' : 'lost', endedAtMs, elapsedMs, score };
-      }
-
-      return {
-        ...state,
-        run,
-        currentSlots: Array(5).fill(null),
-        activeSlot: 0,
-      };
-    }
-
-    case 'USE_HINT': {
-      if (!state.run || !state.puzzle || state.run.status !== 'in_progress') return state;
-      if (state.run.hintsUsed >= 1) return state;
-
-      // Find an unrevealed slot
-      const guessed = new Set(state.run.revealedSlots.map(r => r.slotIndex));
-      const candidateSlots = [0, 1, 2, 3, 4].filter(i => !guessed.has(i));
-      if (candidateSlots.length === 0) return state;
-
-      const slotIndex = candidateSlots[Math.floor(Math.random() * candidateSlots.length)];
-      const beat = state.puzzle.secret[slotIndex];
-      const revealed = [...state.run.revealedSlots, { slotIndex, beat }];
-      const slots = [...state.currentSlots];
-      slots[slotIndex] = beat;
-
-      return {
-        ...state,
-        run: { ...state.run, hintsUsed: 1, revealedSlots: revealed },
-        currentSlots: slots,
-      };
-    }
-
-    case 'TICK': {
-      if (!state.run || state.run.status !== 'in_progress') return state;
-      return {
-        ...state,
-        run: { ...state.run, elapsedMs: action.nowMs - state.run.startedAtMs },
-      };
-    }
-
-    case 'RESET':
-      return { run: null, puzzle: null, currentSlots: Array(5).fill(null), activeSlot: 0 };
-
-    default:
-      return state;
-  }
+function getDecade(year: number): string {
+  return year >= 2000 ? '00s' : '90s';
 }
 
-const initialState: GameState = {
-  run: null,
-  puzzle: null,
-  currentSlots: Array(5).fill(null),
-  activeSlot: 0,
-};
-
 export function useGameRun() {
-  const [state, dispatch] = useReducer(gameReducer, initialState);
+  const [run, setRun] = useState<GameRun | null>(null);
   const tickRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (state.run?.status === 'in_progress') {
+    if (run?.status === 'playing') {
       tickRef.current = window.setInterval(() => {
-        dispatch({ type: 'TICK', nowMs: Date.now() });
+        setRun(r => r ? { ...r, elapsedMs: Date.now() - r.startedAtMs } : r);
       }, 1000);
     } else {
       if (tickRef.current) clearInterval(tickRef.current);
     }
     return () => { if (tickRef.current) clearInterval(tickRef.current); };
-  }, [state.run?.status]);
+  }, [run?.status]);
 
-  const startGame = useCallback((puzzle: PuzzleDefinition) => {
-    dispatch({ type: 'START_GAME', puzzle });
+  const startGame = useCallback((film: FilmEntry) => {
+    setRun(initRun(film));
   }, []);
 
-  const selectBeat = useCallback((slotIndex: number, beat: BeatId) => {
-    dispatch({ type: 'SELECT_BEAT', slotIndex, beat });
-  }, []);
+  const submitGuess = useCallback((guessTitle: string): 'correct' | 'wrong' | 'already_guessed' => {
+    if (!run || run.status !== 'playing') return 'wrong';
 
-  const clearSlot = useCallback((slotIndex: number) => {
-    dispatch({ type: 'CLEAR_SLOT', slotIndex });
-  }, []);
+    // Check for duplicate guess
+    const alreadyGuessed = run.wrongGuesses.some(
+      g => g.title.toLowerCase() === guessTitle.toLowerCase()
+    );
+    if (alreadyGuessed) return 'already_guessed';
 
-  const submitGuess = useCallback(() => {
-    dispatch({ type: 'SUBMIT_GUESS' });
-  }, []);
+    const isCorrect = guessTitle.toLowerCase().trim() === run.film.title.toLowerCase().trim();
 
-  const useHint = useCallback(() => {
-    dispatch({ type: 'USE_HINT' });
-  }, []);
+    if (isCorrect) {
+      const endedAtMs = Date.now();
+      setRun(r => r ? {
+        ...r,
+        status: 'won',
+        solved: true,
+        endedAtMs,
+        elapsedMs: endedAtMs - r.startedAtMs,
+      } : r);
+      return 'correct';
+    }
 
-  const reset = useCallback(() => {
-    dispatch({ type: 'RESET' });
-  }, []);
+    // Build feedback by looking up the guessed film in our database
+    const guessedFilm = FILMS.find(f => f.title.toLowerCase() === guessTitle.toLowerCase());
+    const wrong: WrongGuess = {
+      title: guessTitle,
+      cluesSeenWhenGuessed: run.cluesRevealed,
+      eraMatch: guessedFilm ? getDecade(guessedFilm.year) === getDecade(run.film.year) : false,
+      originMatch: guessedFilm ? guessedFilm.origin === run.film.origin : false,
+      genreMatch: guessedFilm ? guessedFilm.genre === run.film.genre : false,
+    };
 
-  return { state, startGame, selectBeat, clearSlot, submitGuess, useHint, reset };
+    setRun(r => {
+      if (!r) return r;
+      const newWrong = [...r.wrongGuesses, wrong];
+      const nextClues = Math.min(r.cluesRevealed + 1, MAX_CLUES);
+      const isLost = newWrong.length >= MAX_CLUES;
+      const endedAtMs = isLost ? Date.now() : undefined;
+      return {
+        ...r,
+        wrongGuesses: newWrong,
+        cluesRevealed: nextClues,
+        status: isLost ? 'lost' : 'playing',
+        endedAtMs,
+        elapsedMs: isLost ? Date.now() - r.startedAtMs : r.elapsedMs,
+      };
+    });
+    return 'wrong';
+  }, [run]);
+
+  const reset = useCallback(() => setRun(null), []);
+
+  return { run, startGame, submitGuess, reset };
 }

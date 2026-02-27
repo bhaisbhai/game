@@ -1,131 +1,106 @@
 import React, { useEffect, useRef } from 'react';
-import { GameRun, PuzzleDefinition, BEAT_MAP, Guess, SlotMark } from '../types';
-import { formatElapsed } from '../engine/scoring';
-import { getDailyNumber } from '../engine/puzzle';
+import { GameRun } from '../types';
+import { computeScore, getDailyNumber, buildShareText } from '../engine/puzzle';
 
 interface ResultsModalProps {
   run: GameRun;
-  puzzle: PuzzleDefinition;
-  onShare: () => void;
+  isDaily: boolean;
+  onShare: (text: string) => void;
   onPlayAgain: () => void;
   reduceMotion: boolean;
 }
 
-const GRID_MARKS: Record<SlotMark, string> = {
-  exact: '🟩',
-  present: '🟨',
-  absent: '⬛',
-};
-
-function buildShareText(run: GameRun, puzzle: PuzzleDefinition): string {
-  const num = puzzle.mode === 'daily' ? `#${getDailyNumber()}` : 'Practice';
-  const attempts = run.status === 'won' ? `${run.guesses.length}/${puzzle.maxAttempts}` : 'X/8';
-  const time = formatElapsed(run.elapsedMs);
-  const hint = run.hintsUsed > 0 ? ' 🍿' : '';
-  const grade = run.score?.grade ?? '';
-
-  const rows = run.guesses.map((g: Guess) => g.marks.map((m: SlotMark) => GRID_MARKS[m]).join('')).join('\n');
-
-  return `Mixtape Masala — Daily Watchlist ${num}: ${attempts} in ${time}${hint} [${grade}] 🎬📼\n\n${rows}\n\nhttps://fantastic-creponne-bc083b.netlify.app`;
+function fmt(ms: number) {
+  const s = Math.floor(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
-export function ResultsModal({ run, puzzle, onShare, onPlayAgain, reduceMotion }: ResultsModalProps) {
-  const won = run.status === 'won';
+export function ResultsModal({ run, isDaily, onShare, onPlayAgain, reduceMotion }: ResultsModalProps) {
+  const score = computeScore(run.cluesRevealed, run.solved);
+  const dailyNum = isDaily ? getDailyNumber() : undefined;
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    dialogRef.current?.focus();
-  }, []);
+  useEffect(() => { dialogRef.current?.focus(); }, []);
+
+  const handleShare = () => {
+    onShare(buildShareText(run, dailyNum));
+  };
 
   return (
-    <div className={`results-overlay ${won ? 'won' : 'lost'}`} role="dialog" aria-modal="true" aria-label="Results">
+    <div className="results-overlay" role="dialog" aria-modal="true">
       <div className={`results-modal ${!reduceMotion ? 'animate-in' : ''}`} ref={dialogRef} tabIndex={-1}>
 
-        {/* Cassette header */}
-        <div className={`cassette-header ${!reduceMotion ? 'spin' : ''}`}>
-          <span className="cassette-icon" aria-hidden="true">📼</span>
-          {won
-            ? <span className="rewind-badge" aria-hidden="true">⏪ REWOUND</span>
-            : <span className="rewind-badge lost" aria-hidden="true">📼 TAPE SNAP</span>
-          }
+        {/* Score header */}
+        <div className="result-score-block">
+          <span className="result-emoji" role="img">{score.emoji}</span>
+          <div className="result-text">
+            <p className="result-label">{score.label}</p>
+            <p className="result-points">{score.points > 0 ? `${score.points} pts` : 'No points'}</p>
+          </div>
         </div>
 
-        {won ? (
-          <h2 className="result-headline">🎉 You cracked it!</h2>
-        ) : (
-          <h2 className="result-headline">Better luck tomorrow</h2>
-        )}
-
-        {/* Score */}
-        {run.score && (
-          <div className="score-block">
-            <span className={`grade grade-${run.score.grade}`}>{run.score.grade}</span>
-            <span className="score-raw">{run.score.raw}</span>
-          </div>
-        )}
-
-        {/* Stats row */}
-        <div className="stats-row">
-          <div className="stat-box">
-            <span className="stat-val">{won ? run.guesses.length : 'X'}/{puzzle.maxAttempts}</span>
-            <span className="stat-lbl">Attempts</span>
-          </div>
-          <div className="stat-box">
-            <span className="stat-val">{formatElapsed(run.elapsedMs)}</span>
-            <span className="stat-lbl">Time</span>
-          </div>
-          {run.hintsUsed > 0 && (
-            <div className="stat-box">
-              <span className="stat-val">🍿 1</span>
-              <span className="stat-lbl">Hint used</span>
-            </div>
-          )}
+        {/* Film reveal */}
+        <div className="film-reveal">
+          <p className="film-reveal-label">{run.solved ? "You got it!" : "Today's answer was:"}</p>
+          <p className="film-title-big">{run.film.title}</p>
+          <p className="film-meta">
+            {run.film.year} · {run.film.origin} · {run.film.genre}
+          </p>
         </div>
 
-        {/* Secret reveal */}
-        <div className="secret-reveal">
-          <p className="secret-label">Today's watchlist was:</p>
-          <div className="secret-row">
-            {puzzle.secret.map((beat, i) => (
-              <div key={i} className="secret-tile" style={{ '--beat-color': BEAT_MAP[beat].colorToken } as React.CSSProperties}>
-                <span className="tile-emoji" role="img" aria-label={BEAT_MAP[beat].label}>{BEAT_MAP[beat].emoji}</span>
-                <span className="tile-name">{BEAT_MAP[beat].label}</span>
+        {/* All 5 emoji clues revealed */}
+        <div className="all-clues-reveal">
+          <p className="all-clues-label">All 5 clues:</p>
+          <div className="all-clues-row">
+            {run.film.clues.map((clue, i) => (
+              <div key={i} className={`all-clue-tile ${i < run.cluesRevealed ? 'seen' : 'unseen'}`}>
+                <span className="clue-emoji" role="img">{clue}</span>
+                <span className="clue-num">{i + 1}</span>
               </div>
             ))}
           </div>
         </div>
 
+        {/* Fun fact */}
+        <div className="fun-fact">
+          <span className="fun-fact-icon">🍿</span>
+          <p className="fun-fact-text">{run.film.funFact}</p>
+        </div>
+
+        {/* Stats row */}
+        <div className="result-stats">
+          <div className="stat-box">
+            <span className="stat-val">{run.solved ? `${run.cluesRevealed}/5` : '✗'}</span>
+            <span className="stat-lbl">Clues used</span>
+          </div>
+          <div className="stat-box">
+            <span className="stat-val">{run.wrongGuesses.length}</span>
+            <span className="stat-lbl">Wrong guesses</span>
+          </div>
+          <div className="stat-box">
+            <span className="stat-val">{fmt(run.elapsedMs)}</span>
+            <span className="stat-lbl">Time</span>
+          </div>
+        </div>
+
         {/* Share grid preview */}
-        <div className="share-preview" aria-label="Share grid preview">
-          {run.guesses.map((g, gi) => (
-            <div key={gi} className="share-row">
-              {g.marks.map((m, mi) => (
-                <span key={mi} className={`share-block mark-${m}`} aria-hidden="true" />
-              ))}
-            </div>
-          ))}
+        <div className="share-preview-grid" aria-hidden="true">
+          {Array(5).fill(null).map((_, i) => {
+            const wrong = i < run.wrongGuesses.length;
+            const correct = i === run.wrongGuesses.length && run.solved;
+            return (
+              <span key={i} className={`share-sq ${wrong ? 'sq-wrong' : correct ? 'sq-correct' : 'sq-unused'}`} />
+            );
+          })}
         </div>
 
         {/* Actions */}
         <div className="results-actions">
-          <button className="btn-share" onClick={onShare} aria-label="Share your result">
-            ⏪ Share result
-          </button>
-          {puzzle.mode === 'practice' && (
-            <button className="btn-again" onClick={onPlayAgain} aria-label="Play again">
-              🔄 New mix
-            </button>
+          <button className="btn-share" onClick={handleShare}>⏪ Share result</button>
+          {!isDaily && (
+            <button className="btn-again" onClick={onPlayAgain}>🎬 New film</button>
           )}
         </div>
-
-        {/* Share text copy area (hidden, for clipboard fallback) */}
-        <textarea
-          id="share-text-area"
-          readOnly
-          value={buildShareText(run, puzzle)}
-          style={{ position: 'absolute', left: '-9999px', top: 0 }}
-          aria-hidden="true"
-        />
       </div>
     </div>
   );

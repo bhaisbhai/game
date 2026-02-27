@@ -1,95 +1,62 @@
 import { useState, useCallback } from 'react';
-import { PlayerProfile, PlayerSettings, PlayerStats, ScoreBreakdown } from '../types';
+import { PlayerProfile, PlayerSettings, PlayerStats } from '../types';
 import { todayISO } from '../engine/puzzle';
 
-const STORAGE_KEY = 'mixtape_masala_profile_v1';
+const KEY = 'reel_masala_profile_v1';
 
 function defaultProfile(): PlayerProfile {
   return {
     playerId: crypto.randomUUID(),
     createdAtMs: Date.now(),
-    settings: {
-      soundEnabled: true,
-      hapticsEnabled: true,
-      reduceMotion: 'system',
-      colourBlindMode: false,
-      highContrast: false,
-    },
+    settings: { soundEnabled: true, reduceMotion: 'system', highContrast: false },
     stats: {
-      dailyStreakCurrent: 0,
-      dailyStreakBest: 0,
-      solvesTotal: 0,
-      totalTimeMs: 0,
-      shareCount: 0,
-      gamesPlayed: 0,
+      dailyStreakCurrent: 0, dailyStreakBest: 0,
+      solvedTotal: 0, gamesPlayed: 0, shareCount: 0,
+      clueDistribution: [0, 0, 0, 0, 0, 0],
     },
   };
 }
 
-function loadProfile(): PlayerProfile {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as PlayerProfile;
-  } catch {}
+function load(): PlayerProfile {
+  try { const r = localStorage.getItem(KEY); if (r) return JSON.parse(r); } catch {}
   return defaultProfile();
 }
 
-function saveProfile(p: PlayerProfile) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
-}
+function save(p: PlayerProfile) { localStorage.setItem(KEY, JSON.stringify(p)); }
 
 export function usePlayerProfile() {
-  const [profile, setProfile] = useState<PlayerProfile>(loadProfile);
+  const [profile, setProfile] = useState<PlayerProfile>(load);
 
   const updateSettings = useCallback((patch: Partial<PlayerSettings>) => {
-    setProfile(prev => {
-      const next = { ...prev, settings: { ...prev.settings, ...patch } };
-      saveProfile(next);
-      return next;
-    });
+    setProfile(prev => { const n = { ...prev, settings: { ...prev.settings, ...patch } }; save(n); return n; });
   }, []);
 
-  const recordSolve = useCallback((score: ScoreBreakdown, dateISO?: string) => {
+  const recordResult = useCallback((cluesUsed: number, solved: boolean, dateISO?: string) => {
     setProfile(prev => {
-      const stats: PlayerStats = { ...prev.stats };
-      const today = dateISO ?? todayISO();
-      stats.solvesTotal += 1;
-      stats.gamesPlayed += 1;
-      stats.totalTimeMs += score.timeMs;
+      const s: PlayerStats = { ...prev.stats };
+      const dist: [number,number,number,number,number,number] = [...s.clueDistribution] as [number,number,number,number,number,number];
+      if (solved) { dist[cluesUsed - 1]++; s.solvedTotal++; } else { dist[5]++; }
+      s.gamesPlayed++;
+      s.clueDistribution = dist;
 
-      if (stats.lastDailyPlayedDateISO) {
-        const last = new Date(stats.lastDailyPlayedDateISO);
-        const todayD = new Date(today);
-        const diff = Math.round((todayD.getTime() - last.getTime()) / 86400000);
-        if (diff === 1) stats.dailyStreakCurrent += 1;
-        else if (diff > 1) stats.dailyStreakCurrent = 1;
-      } else {
-        stats.dailyStreakCurrent = 1;
+      if (dateISO) {
+        const today = dateISO ?? todayISO();
+        if (s.lastDailyPlayedDateISO) {
+          const last = new Date(s.lastDailyPlayedDateISO);
+          const diff = Math.round((new Date(today).getTime() - last.getTime()) / 86400000);
+          s.dailyStreakCurrent = diff === 1 ? s.dailyStreakCurrent + 1 : 1;
+        } else { s.dailyStreakCurrent = 1; }
+        s.dailyStreakBest = Math.max(s.dailyStreakBest, s.dailyStreakCurrent);
+        s.lastDailyPlayedDateISO = today;
       }
-      stats.dailyStreakBest = Math.max(stats.dailyStreakBest, stats.dailyStreakCurrent);
-      stats.lastDailyPlayedDateISO = today;
 
-      const next = { ...prev, stats };
-      saveProfile(next);
-      return next;
-    });
-  }, []);
-
-  const recordGamePlayed = useCallback(() => {
-    setProfile(prev => {
-      const next = { ...prev, stats: { ...prev.stats, gamesPlayed: prev.stats.gamesPlayed + 1 } };
-      saveProfile(next);
-      return next;
+      const n = { ...prev, stats: s }; save(n); return n;
     });
   }, []);
 
   const recordShare = useCallback(() => {
-    setProfile(prev => {
-      const next = { ...prev, stats: { ...prev.stats, shareCount: prev.stats.shareCount + 1 } };
-      saveProfile(next);
-      return next;
-    });
+    setProfile(prev => { const n = { ...prev, stats: { ...prev.stats, shareCount: prev.stats.shareCount + 1 } }; save(n); return n; });
   }, []);
 
-  return { profile, updateSettings, recordSolve, recordShare, recordGamePlayed };
+  return { profile, updateSettings, recordResult, recordShare };
 }
