@@ -553,7 +553,7 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   gap: 8px;
 }
 .tracker-label {
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   color: var(--text2);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -607,7 +607,7 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 /* ── Quote source hint ── */
 .quote-source-hint {
   text-align: center;
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   color: var(--text2);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -638,6 +638,8 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .quote-word {
   display: flex;
   align-items: flex-end;
+  flex-wrap: wrap;       /* allow very long words to break across lines */
+  max-width: 100%;
   gap: 3px;
 }
 
@@ -645,12 +647,12 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 36px;
-  border-radius: 5px;
+  width: 36px;
+  height: 46px;
+  border-radius: 6px;
   border: 2px solid var(--border2);
   font-family: var(--font-title);
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 700;
   letter-spacing: 0;
   transition: border-color 0.15s, background 0.15s;

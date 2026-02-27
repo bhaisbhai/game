@@ -7,20 +7,22 @@ export function todayISO(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// Epoch set so each calendar day maps to a different quote, cycling through all 40.
+// Day 1 = 2026-02-27 → "Houston, we have a problem." (skips Matrix as opener)
+const EPOCH_MS = new Date('2026-02-18').getTime();
+
 export function getDailyQuote(dateISO?: string): QuoteEntry {
   const date = dateISO ?? todayISO();
-  const epoch = new Date('2026-02-27').getTime();
   const dayMs = new Date(date).setHours(0, 0, 0, 0);
-  const dayIndex = Math.floor((dayMs - epoch) / 86400000);
+  const dayIndex = Math.floor((dayMs - EPOCH_MS) / 86400000);
   const idx = ((dayIndex % QUOTES.length) + QUOTES.length) % QUOTES.length;
   return QUOTES[idx];
 }
 
 export function getDailyNumber(dateISO?: string): number {
   const date = dateISO ?? todayISO();
-  const epoch = new Date('2026-02-27').getTime();
   const dayMs = new Date(date).setHours(0, 0, 0, 0);
-  return Math.max(1, Math.floor((dayMs - epoch) / 86400000) + 1);
+  return Math.max(1, Math.floor((dayMs - EPOCH_MS) / 86400000) + 1);
 }
 
 export function getPracticeQuote(): QuoteEntry {
